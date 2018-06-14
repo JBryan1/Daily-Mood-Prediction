@@ -1,0 +1,98 @@
+---
+title: "EDA"
+author: "Jonathan Bryan"
+date: "June 10, 2018"
+output: pdf_document
+---
+
+```{r}
+library(zoo)
+library(forecast)
+library(tseries)
+data = read.csv("mood_activity.csv")
+```
+
+```{r}
+#average daily mood plot
+plot(data$date, data$mood, type = "n",
+     main = "Fig. 1. Average Daily Mood from 2018-01-04 to 2018-06-05",
+     xlab = "Date",
+     ylab =" Average Daily Mood",
+     cex.main = 1)
+lines(data$date, data$mood)
+lines(data$date, rollmean(data$mood, k=7, fill=NA), col="red", lw =2)
+lines(data$date, rollmean(data$mood, k=14, fill=NA), col="blue", lw =2)
+legend("topleft", legend = c("Original", 
+                               "7-Day Rolling Average",
+                               "30-Day Rolling Average"),
+       col = c("black", "red", "blue"),
+       lty = 1,
+       cex =0.8)
+
+my_plot.decomposed.ts = function(x, title="", ...) {
+  xx <- x$x
+  if (is.null(xx)) 
+    xx <- with(x, if (type == "additive") 
+      random + trend + seasonal
+      else random * trend * seasonal)
+  plot(cbind(observed = xx, trend = x$trend, seasonal = x$seasonal, random = x$random), 
+       main=title, ...)
+}
+
+#time series decompostion
+mood_ts = ts(data$mood, deltat = 1/50)
+decompose_mood = decompose(mood_ts, "additive")
+my_plot.decomposed.ts(decompose_mood, "Fig. 2. Decomposition of Mood Time Series",cex.main = 1)
+```
+Observations:
+- No apparent seasonal component
+- Appears to be a random noise model with trend
+
+
+```{r}
+#augmented dickey fuller
+adf.test(data$mood)
+```
+
+
+```{r}
+#autocorrelation and partial autocorrelation
+acf(data$mood, main = "Fig. 3. ACF of Average Daily Mood",cex.main = 1)
+pacf(data$mood, main = "Fig. 4. PACF of Average Daily Mood",cex.main = 1)
+
+#first difference
+#plot(diff(data$mood), type="l")
+#acf(diff(data$mood))
+#pacf(diff(data$mood))
+
+#second difference
+#plot(diff(diff(data$mood)), type="l")
+#acf(diff(diff(data$mood)))
+#pacf(diff(diff(data$mood)))
+
+#detrended
+#mood_trend = lm(mood ~ time(mood), data= data)
+#plot(resid(mood_trend), type="l")
+#acf(resid(mood_trend))
+
+#lag 20 difference
+#plot(diff(data$mood,lag=20), type="l")
+#acf(diff(data$mood,lag=20))
+#pacf(diff(data$mood,lag=20))
+```
+
+```{r}
+#corr_data = data
+#names(corr_data)[2] = "idle time"
+#names(corr_data)[3] = "step count"
+#names(corr_data)[4] = "active time"
+#names(corr_data)[8] = "sleep time"
+#M = cor(corr_data[,2:8])
+#corrplot::corrplot(M, cex.main = 1)
+```
+
+```{r}
+test = lm(mood ~ . -date + time(mood), data = data)
+summary(test)
+```
+

@@ -1,0 +1,30 @@
+---
+title: "sleep_munging"
+author: "Jonathan Bryan"
+date: "June 7, 2018"
+output: pdf_document
+---
+
+```{r}
+sleep = read.csv("sleep.csv", stringsAsFactors = FALSE)
+
+#extract date, quality, sleep time hrs
+sleep = subset(sleep, select = c(date,
+                        quality,
+                        total_sleep_time_hrs))
+
+#Put quality on 1-5 scale and remove 0s   
+sleep[sleep == 0] = NA
+sleep$quality = sleep$quality - 50000
+
+#date conversion
+sleep$date = as.Date(sleep$date, "%m/%d/%Y") 
+
+#only capture sleep from 01-04-18 to 06-06-18
+sleep = sleep[sleep$date >= "2018-01-04" & sleep$date <= "2018-06-06",]
+
+#sleep time > 0
+sleep$total_sleep_time_hrs = -1* sleep$total_sleep_time_hrs
+
+write.csv(sleep, file ="sleep_munged.csv", row.names = FALSE)
+```

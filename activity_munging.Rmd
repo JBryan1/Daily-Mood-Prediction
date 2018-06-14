@@ -1,0 +1,37 @@
+---
+title: "activity_munging"
+author: "Jonathan Bryan"
+date: "June 6, 2018"
+output: pdf_document
+---
+
+```{r}
+#load data
+activity = read.csv("activity.csv", stringsAsFactors = FALSE)
+
+#keep wanted variables
+activity = subset(activity, select = c(create_time,
+                                        longest_idle_time,
+                                        step_count,
+                                        active_time, 
+                                        calorie))
+
+#date conversion
+activity$create_time = as.Date(activity$create_time, "%m/%d/%Y") 
+
+#only capture activity from 01-04-18 to 06-06-18
+activity = activity[activity$create_time >= "2018-01-04" & activity$create_time <= "2018-06-06",]
+
+#convert longest idle time, run time, walk time, and active time to hours
+utc_milli_hrs = function(utc_milli){
+                utc_milli/(1000 * 60 * 60)  
+}
+
+activity$longest_idle_time = sapply(activity$longest_idle_time,utc_milli_hrs)
+activity$active_time = sapply(activity$active_time,utc_milli_hrs)
+
+#change create_time to date
+names(activity)[names(activity) == 'create_time'] = 'date'
+
+write.csv(activity, file ="activity_munged.csv", row.names = FALSE)
+```

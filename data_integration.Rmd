@@ -1,0 +1,34 @@
+---
+title: "data_integration"
+author: "Jonathan Bryan"
+date: "June 7, 2018"
+output: pdf_document
+---
+
+```{r}
+mood = read.csv("mood_munged.csv", stringsAsFactors = FALSE)
+activity = read.csv("activity_munged.csv", stringsAsFactors = FALSE)
+sleep = read.csv("sleep_munged.csv", stringsAsFactors = FALSE)
+```
+
+```{r}
+#combine mood, activity and sleep data
+combined = merge(mood,activity, all = TRUE, by = "date")
+combined = merge(combined,sleep, all = TRUE, by = "date")
+
+#remove dates with no mood data and 2018-06-06 because of no activity data
+combined = combined[!is.na(combined$mood),]
+combined = combined[combined$date < "2018-06-06",]
+```
+
+```{r}
+#data imputation
+library(mice)
+set.seed(1)
+impute = mice(combined,m=5,maxit=50,meth='pmm',seed=500, printFlag = FALSE )
+combined = complete(impute,1)
+```
+
+```{r}
+write.csv(combined, file = "mood_activity.csv", row.names = FALSE)
+```

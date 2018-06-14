@@ -1,0 +1,54 @@
+---
+title: "mood_munging"
+author: "Jonathan Bryan"
+date: "June 6, 2018"
+output: pdf_document
+---
+
+```{r}
+mood = read.csv("mood.csv", stringsAsFactors = FALSE)
+
+#remove weekday, time, and note
+mood = subset(mood, select = -c(year,weekday, time, note, activities))
+
+#moods in data
+unique(mood$mood)
+```
+
+```{r}
+#change moods to numeric scale
+mood[mood$mood == "Awesome", ]$mood = 5
+mood[mood$mood == "Love", ]$mood = 5
+mood[mood$mood == "Good", ]$mood = 4
+mood[mood$mood == "Content", ]$mood = 4
+mood[mood$mood == "Satisfied", ]$mood = 4
+mood[mood$mood == "Peaceful", ]$mood = 4
+mood[mood$mood == "Meh", ]$mood = 3
+mood[mood$mood == "Confused", ]$mood = 3
+mood[mood$mood == "Bored", ]$mood = 3
+mood[mood$mood == "Tired", ]$mood = 3
+mood[mood$mood == "Bad", ]$mood = 2
+mood[mood$mood == "Sad", ]$mood = 2
+mood[mood$mood == "Angry", ]$mood = 2
+mood[mood$mood == "Anxious", ]$mood = 2
+mood[mood$mood == "Awful", ]$mood = 1
+mood[mood$mood == "Depressed", ]$mood = 1
+
+mood$mood = as.numeric(mood$mood)
+unique(mood$mood)
+typeof(mood$mood)
+```
+
+```{r}
+#date conversion
+mood$date = as.Date(mood$date, "%m/%d/%Y") 
+
+#combine days
+mood_agg = aggregate(mood ~ date, data = mood, FUN=mean)
+```
+
+```{r}
+write.csv(mood_agg, file ="mood_munged.csv", row.names = FALSE)
+```
+
+

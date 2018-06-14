@@ -1,0 +1,143 @@
+---
+title: "modeling"
+author: "Jonathan Bryan"
+date: "June 10, 2018"
+output: pdf_document
+---
+
+```{r}
+library(bsts)
+data = read.csv("mood_activity.csv")
+```
+
+```{r, echo = FALSE, message= FALSE, warning=FALSE}
+set.seed(1)
+ss1 = AddLocalLinearTrend(list(), data$mood)
+ss1 = AddSeasonal(ss1, data$mood, nseasons=21)
+
+ss2 = AddLocalLinearTrend(list(), data$mood)
+
+ss3 = AddLocalLinearTrend(list(), data$mood)
+
+ss4 = AddAr(list(), data$mood, lags = 5)
+
+ss5 = AddAr(list(), data$mood, lags = 5)
+ss5 = AddLocalLinearTrend(ss5, data$mood)
+
+ss6 = AddAr(list(), data$mood, lags = 5)
+ss6 = AddStudentLocalLinearTrend(ss6, data$mood)
+
+model1 = bsts(mood ~.,
+              data = data[,2:8],
+              state.specification = ss1,
+              niter = 1000)
+
+model2 = bsts(mood ~.,
+              data = data[,2:8],
+              state.specification = ss2,
+              niter = 1000)
+
+model3 = bsts(data$mood,
+              state.specification = ss3,
+              niter = 1000)
+
+model4 = bsts(data$mood,
+              state.specification = ss4,
+              niter = 1000)
+
+model5 = bsts(data$mood,
+              state.specification = ss5,
+              niter = 1000)
+
+model6 = bsts(data$mood,
+              state.specification = ss6,
+              niter = 1000)
+```
+
+
+```{r}
+model1_sum = summary(model1)
+model2_sum = summary(model2)
+model3_sum = summary(model3)
+model4_sum = summary(model4)
+model5_sum = summary(model5)
+table1 = data.frame(Res.sd = c(model1_sum$residual.sd,
+                               model2_sum$residual.sd,
+                               model3_sum$residual.sd,
+                               model4_sum$residual.sd,
+                               model5_sum$residual.sd),
+                    Pre.sd = c(model1_sum$prediction.sd,
+                               model2_sum$prediction.sd,
+                               model3_sum$prediction.sd,
+                               model4_sum$prediction.sd,
+                               model5_sum$prediction.sd),
+                    R.sq = c(0,
+                               model2_sum$rsquare,
+                               model3_sum$rsquare,
+                               model4_sum$rsquare,
+                               model5_sum$rsquare),
+                    Relative.gof = c(model1_sum$relative.gof,
+                               model2_sum$relative.gof,
+                               model3_sum$relative.gof,
+                               model4_sum$relative.gof,
+                               model5_sum$relative.gof))
+colnames(table1) = c("Residual SD",
+                     "1-Step Pred. SD",
+                     "R-squared",
+                     "Harvey's GoF")
+rownames(table1) = c("LLT + Seasonal + Cov",
+                     "LLT + Cov",
+                     "LLT",
+                     "AR(5)",
+                     "LLT + AR(5)")
+knitr::kable(round(table1,3), caption = "Table 1. Model Summary Statistics")
+```
+
+
+```{r}
+plot(model5, "components", main = "Fig. 5.                      ")
+```
+
+```{r}
+#prediction
+pred5 = predict(model5, horizon = 14)
+plot(pred5, plot.original = 156, main ="Fig. 6. AR(5) Local Linear Trend Model 14-Day Prediction",
+     cex.main = 1)
+```
+
+
+
+```{r}
+CompareBstsModels(list("LLT + Seasonal + Cov" = model1,
+                       "LLT + Cov" = model2,
+                       "LLT" = model3,
+                       "AR(5)" = model4,
+                       "AR(5) + LLT" = model5),
+                  colors = c("black", 
+                             "red",
+                             "blue", 
+                             "green", 
+                             "orange"),
+                  main = "Fig. 7. Average Daily Mood Model Comparison")
+```
+
+```{r}
+#par(mfrow=c(1,2))
+qqdist(residuals(model5), main = "Fig. 8. AR(5) Local Linear Trend Model QQ-Plot",
+       cex.main = 0.7,
+       cex.lab = 0.7)
+
+#qqplot(rt(1000,df=27),residuals(model6), main = "Fig. 5. AR(5) Local Linear Trend t-Dist Model QQ-Plot",
+#       cex.main = 0.7,
+#       cex.lab = 0.7,
+#       xlab ="Quantiles of t-Dist (df = 14)",
+#       col = "blue",
+#       pch=16)
+#abline(0,1)
+```
+
+```{r}
+AcfDist(residuals(model5), main = "Fig. 9. AR(5) Local Linear Trend Model ACF",
+        cex.main = 1)
+```
+
